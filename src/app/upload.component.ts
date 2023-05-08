@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Input, EventEmitter, Output } from '@angular/core';
 import { BlobServiceClient } from '@azure/storage-blob';
 
 @Component({
@@ -8,29 +8,32 @@ import { BlobServiceClient } from '@azure/storage-blob';
 })
 export class UploadComponent {
     
+    @Input() blobSasUrl: string = "";
+    @Input() containerName: string = "";
+    @Output() statusMessage: EventEmitter<string> = new EventEmitter<string>;
+
     selectFiles(): void {
       const fileInput = document.getElementById("file-input");
       fileInput?.click();
     }
 
     async uploadFiles(event: any): Promise<void> {
-      const blobSasUrl = "placeholder";
-      const containerName = "placeholder"
-      const blobServiceClient = new BlobServiceClient(blobSasUrl);
-      const containerClient = blobServiceClient.getContainerClient(containerName);
-        
+       
       try{
-        console.log("Uploading files...");
+        const blobServiceClient = new BlobServiceClient(this.blobSasUrl);
+        const containerClient = blobServiceClient.getContainerClient(this.containerName);
+
+        this.statusMessage.emit("Uploading files...");
         const promises = [];
         for (const file of event.target.files){
             const blockBlobClient = containerClient.getBlockBlobClient(file.name);
             promises.push(blockBlobClient.uploadBrowserData(file));
         }
         await Promise.all(promises);
-        console.log("Uploaded!");
+        this.statusMessage.emit("Uploaded!");
       }
       catch (error: any){
-        console.log(error.message);
+        this.statusMessage.emit(error.message);
       }
     }
 }
